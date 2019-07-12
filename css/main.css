@@ -1,0 +1,13 @@
+.chat-box{
+    height: 300px;
+    width: 200px;
+    overflow-y: scroll;
+    border-width: 2px;
+    border-color: black;
+    border-style: solid;
+}
+
+.user2{
+text-align: right;
+}
+
