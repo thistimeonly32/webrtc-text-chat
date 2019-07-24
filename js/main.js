@@ -11,8 +11,8 @@ var dataChannel = document.querySelector('input#dataChannel');
 var sendButton = document.querySelector('button#user1SendButton');
 var connectButton = document.querySelector('button#connectButton');
 var closeButton = document.querySelector('button#closeButton');
-// var socket;
-// var stompClient;
+var socket;
+var stompClient;
 
 $(document).ready(function () {
     bindEvents();
@@ -26,6 +26,43 @@ function bindEvents() {
     // sendButton.onclick = sendMessage;
     connectButton.onclick = connectChat;
     closeButton.onclick = closeConnection;
+
+    var servers = null;
+    pcConstraint = null;
+    dataConstraint = null;
+    trace('Using SCTP based data channels');
+    // For SCTP, reliable and ordered delivery is true by default.
+    // Add User1Connection to global scope to make it visible
+    // from the browser console.
+    window.localPC = localPC =
+        new RTCPeerConnection(servers, pcConstraint);
+    trace('Created user 1 peer connection object');
+
+    localChnl = localPC.createDataChannel('localChnl',
+        dataConstraint);
+    trace('Created user 1 channel');
+
+    socket = new SockJS(`http://localhost:8080/ossnapi-websocket?userId=${getQueryStringValue('userId')}`);
+    stompClient = Stomp.over(socket);
+    stompClient.connect({}, function (frame) {
+        console.log('Connected msg: ' + frame);
+
+        stompClient.subscribe('/user/queue/private', (res) => {
+            debugger;
+            console.log("got private response: " + res);
+            console.log(res);
+            // console.log(res.body.toString();
+            // localPC.setRemoteDescription(res);
+
+            // if (getQueryStringValue('userId') == 2) {
+            //     localPC.createAnswer().then(
+            //         gotDescriptionUser2,
+            //         onCreateSessionDescriptionError
+            //     );
+            // }
+
+        });
+    });
 }
 
 function closeConnection() {
@@ -34,11 +71,36 @@ function closeConnection() {
 
 function connectChat() {
     console.log('connect button');
-    var socket = new SockJS(`http://localhost:8080/ossnapi-websocket?userId=${getQueryStringValue('userId')}`);
-    var stompClient = Stomp.over(socket);
-    stompClient.connect({}, function (frame) {
-        console.log('Connected msg: ' + frame);
-    });
+
+
+
+    // user1Chnl.onmessage = onUser1MsgCB;
+
+    // user1PC.onicecandidate = user1ICECB;
+    // user1PC.onopen = onUser1ChnlStateChange;
+    // user1PC.onclose = onUser1ChnlStateChange;
+
+    // Add User2Connection to global scope to make it visible
+    // from the browser console.
+
+
+
+    // window.user2PC = user2PC =
+    //     new RTCPeerConnection(servers, pcConstraint);
+    // trace('Created user 2 peer connection object');
+
+    // user2PC.onicecandidate = user2ICECB;
+    // user2PC.ondatachannel = user2ChnlCB;
+
+    localPC.createOffer().then(
+        gotDescriptionUser1,
+        onCreateSessionDescriptionError
+    );
+
+
+
+
+
 }
 
 function startConnection() {
@@ -79,19 +141,29 @@ function startConnection() {
 }
 
 function gotDescriptionUser1(desc) {
-    user1PC.setLocalDescription(desc);
-    trace('Offer from user1 \n' + desc.sdp);
-    user2PC.setRemoteDescription(desc);
-    user2PC.createAnswer().then(
-        gotDescriptionUser2,
-        onCreateSessionDescriptionError
+    trace('Offer from local \n' + desc.sdp);
+    console.log(desc);
+    console.log("desc object: " + desc);
+
+    localPC.setLocalDescription(desc);
+    stompClient.send(
+        "/user/2/queue/private",
+        {},
+        JSON.stringify(desc)
     );
 }
 
 function gotDescriptionUser2(desc) {
-    user2PC.setLocalDescription(desc);
+    // user2PC.setLocalDescription(desc);
     trace('Answer from user2 \n' + desc.sdp);
-    user1PC.setRemoteDescription(desc);
+    // user1PC.setRemoteDescription(desc);
+
+    localPC.setLocalDescription(desc);
+    stompClient.send(
+        "/user/1/queue/private",
+        {},
+        JSON.stringify(desc)
+    );
 }
 
 function onCreateSessionDescriptionError(error) {
