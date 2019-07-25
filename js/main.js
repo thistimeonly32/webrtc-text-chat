@@ -8,7 +8,7 @@ var pcConstraint;
 var dataConstraint;
 var chatBox = document.querySelector("div#chatBox");
 var dataChannel = document.querySelector("input#dataChannel");
-var sendButton = document.querySelector("button#user1SendButton");
+var sendButton = document.querySelector("button#sendButton");
 var connectButton = document.querySelector("button#connectButton");
 var closeButton = document.querySelector("button#closeButton");
 var socket;
@@ -33,7 +33,7 @@ function getQueryStringValue(key) {
 }
 
 function bindEvents() {
-  // sendButton.onclick = sendMessage;
+  sendButton.onclick = sendData;
   connectButton.onclick = connectChat;
   closeButton.onclick = closeConnection;
 
@@ -54,8 +54,10 @@ function bindEvents() {
     );
     trace("Created user 1 channel");
   }
-
-  // user1Chnl.onmessage = onUser1MsgCB;
+  if (getQueryStringValue("userId") == 1) {
+    localChnl.onmessage = onUser1MsgCB;
+  }
+  
 
   localPC.onicecandidate = user1ICECB;
   localPC.onopen = onUser1ChnlStateChange;
@@ -182,7 +184,6 @@ function onCreateSessionDescriptionError(error) {
 }
 
 function user1ICECB(event) {
-  debugger;
   trace("local ice callback");
   if (event.candidate) {
     console.log(event.candidate);
@@ -201,7 +202,6 @@ function user1ICECB(event) {
         JSON.stringify(event.candidate)
       );
     }
-
     trace("User1 ICE candidate: \n" + event.candidate.candidate);
   }
 }
@@ -225,55 +225,54 @@ function onAddIceCandidateError(error) {
 }
 
 function user2ChnlCB(event) {
-  debugger;
   trace("Receive user 2 Channel Callback");
   localChnl = event.channel;
-  //   user2Chnl.onmessage = onUser2MsgCB;
-  user2Chnl.onopen = onUser2ChnlStateChange;
-  user2Chnl.onclose = onUser2ChnlStateChange;
+  localChnl.onmessage = onUser2MsgCB;
+  localChnl.onopen = onUser2ChnlStateChange;
+  localChnl.onclose = onUser2ChnlStateChange;
 }
 
 function onUser1MsgCB(event) {
   trace("user 1 Message received");
   // user2ChatBox.innerHTML = user1ChatBox.innerHTML = event.data;
-  $("#user1ChatBox").append(
+  $("#chatBox").append(
     `<div class="user2" ><div><b>user2: </b></div>${event.data}</div>`
   );
-  $("#user2ChatBox").append(
-    `<div><div><b>user2: </b></div>${event.data}</div>`
-  );
+  // $("#chatBox").append(
+  //   `<div><div><b>user2: </b></div>${event.data}</div>`
+  // );
 }
 
 function onUser2MsgCB(event) {
   trace("user 2 Message received");
-  $("#user1ChatBox").append(
-    `<div><div><b>user1: </b></div>${event.data}</div>`
-  );
-  $("#user2ChatBox").append(
+  // $("#chatBox").append(
+  //   `<div><div><b>user1: </b></div>${event.data}</div>`
+  // );
+  $("#chatBox").append(
     `<div class="user2" ><div><b>user1: </b></div>${event.data}</div>`
   );
 }
 
-function user1SendData() {
-  var user1data = user1DataChnl.value;
-  user1Chnl.send(user1data);
+function sendData() {
+  var user1data = dataChannel.value;
+  localChnl.send(user1data);
 
   trace("user1 data sent: " + user1data);
 }
 
-function user2SendData() {
-  var user2data = user2DataChnl.value;
-  user2Chnl.send(user2data);
-  trace("user1 data sent: " + user2data);
-}
+// function user2SendData() {
+//   var user2data = dataChannel.value;
+//   localChnl.send(user2data);
+//   trace("user1 data sent: " + user2data);
+// }
 
 function onUser1ChnlStateChange() {
-  var readyState = user1Chnl.readyState;
+  var readyState = localChnl.readyState;
   trace("Send channel state is: " + readyState);
 }
 
 function onUser2ChnlStateChange() {
-  var readyState = user2Chnl.readyState;
+  var readyState = localChnl.readyState;
   trace("Receive channel state is: " + readyState);
 }
 
