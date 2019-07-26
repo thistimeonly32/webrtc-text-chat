@@ -66,7 +66,7 @@ function bindEvents() {
   localPC.ondatachannel = user2ChnlCB;
 
   socket = new SockJS(
-    `http://localhost:8080/ossnapi-websocket?userId=${getQueryStringValue(
+    `http://192.168.1.203:8080/ossnapi-websocket?userId=${getQueryStringValue(
       "userId"
     )}`
   );
